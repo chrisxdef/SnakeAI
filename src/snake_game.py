@@ -1,24 +1,40 @@
 from time import sleep
 from random import randint
+from random import choice
 import numpy as np
+from Tkinter import *
 
-
-class SnakeGame:
+class SnakeGame(Tk):
     UP=0
     RIGHT=1
     DOWN=2
     LEFT=3
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+	Tk.__init__(self, *args, **kwargs)
         self.width = 20
         self.height = 20
-        self.board = 20*20*[0]
+        self.board = self.width*self.height*[0]
         self.head = 22
         self.snake = [self.head,self.head+self.width,self.head+(2*self.width)]
         self.food = [10]
-        self.on = False
-        
+        self.last_input = None
+       	self.scale = 16
+	self.root = Tk()
+	self.root.title("SnakeAI")
+	self.w = Canvas(self.root, width=self.width*self.scale, height=self.height*self.scale)
+	self.w.pack()
+	self.grid = []
+	for i in range(self.width*self.height):
+	    x= (i%self.width)*self.scale
+	    y= (i/self.width)*self.scale
+	    self.grid.append(self.w.create_rectangle(x,y,x+self.scale,y+self.scale, fill="white"))
+	self.on = True
+	self.redraw(100)
+
     def update(self,cmd):
-        print(cmd)
+	if cmd == None:
+	    cmd = self.last_input
+	self.last_input = cmd
         #Update head location and check for wall collision
         if cmd==SnakeGame.UP and self.head>self.width-1:
             self.head-=self.width
@@ -39,8 +55,9 @@ class SnakeGame:
         if self.head in self.food:
             self.food.remove(self.head)
             r = randint(0,399)
+	    while r in self.snake or r in self.food:
+        	r = randint(0,399)
             self.food.append(r)
-            print("food"+str(r))
         else:
             self.snake.pop()
         #Check for Snake on Snake collision
@@ -57,7 +74,7 @@ class SnakeGame:
         closed = []
         path = self.astar(frontier,closed)
         if path == None:
-            return None
+            return self.idle()
         move = path[2]
         diff = self.head - move
         if diff == self.width:
@@ -71,7 +88,22 @@ class SnakeGame:
         return None
         
         
-                
+    def idle(self):            
+	h = self.head
+	moves = []
+	if h-self.width>0 and not h-self.width in self.snake:
+		moves.append(SnakeGame.UP)
+	if h%self.width!=self.width and not h+1 in self.snake:
+		moves.append(SnakeGame.RIGHT)
+	if h+self.width<self.height*self.width-1 and not h+self.width in self.snake:
+		moves.append(SnakeGame.DOWN)
+	if h%self.width!=0 and not h-1 in self.snake:
+		moves.append(SnakeGame.LEFT)
+	if not moves:
+		return None
+	return choice(moves)
+	
+
     def astar(self,frontier,closed):
         if not frontier:
             return None
@@ -127,45 +159,46 @@ class SnakeGame:
         for f in self.food:
             #number of rows from n to f
             rows = abs(n/self.width-f/self.width)
-            if rows<h_rows:
-                h_rows = rows
             #' ' cols ' ' ' '
             cols = abs(n%self.width-f%self.width)
-            if cols<h_cols:
+            if rows<h_rows and cols<h_cols:
+                h_rows = rows
                 h_cols = cols
-        return h_cols + h_rows  
+	#check if any parts of the snake, minus the head, are adjacent
+	adj = 0
+	pwr = 0
+	body = self.snake[1:]
+	if n+1 in body:
+		pwr+=1
+	if n-1 in body:
+		pwr+=1
+	if n+self.width in body:
+		pwr+=1
+	if n-self.width in body:
+		pwr+=1
+	if pwr>0:
+		adj=len(self.snake)**pwr
+        return h_cols + h_rows + adj
         
                 
     def gameover(self):
         print("Game Over")
+	print(self.last_input)
         self.on = False
 
-    def paint(self):
-        BLACK = [0,0,0]
-        WHITE = [255,255,255]
-        data = np.zeroes((WIDTH,HEIGHT),dtype=np.uint8)
-
-        data[0,WIDTH*HEIGHT-1] = WHITE
-        for i in this.snake:
-            data[i,i] = BLACK
-        for i in this.food:
-            data[i,i] = BLACK
-            
-
-        img = smp.toimage(data)
-        img.show()
-
-        
+    def redraw(self, delay):
+	if self.on:	
+		self.update(self.ai())
+		for i in range(len(self.board)):
+			color = "white"
+			if i in self.snake:
+			    color = "black"
+			elif i in self.food:
+			    color = "gray"
+			self.w.itemconfig(self.grid[i], fill=color)
+				
+		self.after(delay, lambda: self.redraw(delay))
 
 if __name__ == '__main__':
     game = SnakeGame()
-    move = None
-    game.on = True
-    while(game.on):
-        a_move = game.ai()
-        if(not a_move is None):
-            move = a_move
-        game.update(move)
-        game.paint()
-        print(game.snake)
-        sleep(0.5)
+    game.mainloop()
