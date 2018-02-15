@@ -83,6 +83,7 @@ class SnakeGame(Tk):
         path = self.astar(frontier,closed)
         if path == None:
             return self.idle() 
+	print(path)
         move = path[2]
         diff = self.head - move
         if diff == self.width:
@@ -122,6 +123,8 @@ class SnakeGame(Tk):
             if p[0] < shortest[0]:
                 shortest = p
         frontier.remove(shortest)
+	if len(frontier)==0 and len(closed) > 0:
+		return shortest
         #Expand upon the shortest path
         #Do not include paths that lead into a wall, snake or indexes in closed
         #When a possible path is found update its score and add it to the frontier
@@ -180,21 +183,20 @@ class SnakeGame(Tk):
                 h_rows = rows
                 h_cols = cols
 	#check if any parts of the snake, minus the head, are adjacent
-	adj = 0
-	pwr = 0
-	body = self.snake[1:]
-	if n+1 in body:
-		pwr+=1
-	if n-1 in body:
-		pwr+=1
-	if n+self.width in body:
-		pwr+=1
-	if n-self.width in body:
-		pwr+=1
-	if pwr>0:
-		adj=len(self.snake)**pwr
-        return h_cols + h_rows + adj
-        
+	#adj = 0
+	#pwr = 0
+	#body = self.snake[1:]
+	#if n+1 in body:
+	#	pwr+=1
+	#if n-1 in body:
+	#	pwr+=1
+	#if n+self.width in body:
+	#	pwr+=1
+	#if n-self.width in body:
+	#	pwr+=1
+	#if pwr>0:
+	#	adj=len(self.snake)**pwr
+        return h_cols + h_rows        
                 
     def gameover(self):
         print("Game Over")
