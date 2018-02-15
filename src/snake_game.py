@@ -14,20 +14,27 @@ class SnakeGame(Tk):
         self.width = 20
         self.height = 20
         self.board = self.width*self.height*[0]
+	self.score = 0
         self.head = 22
         self.snake = [self.head,self.head+self.width,self.head+(2*self.width)]
         self.food = [10]
         self.last_input = None
        	self.scale = 16
 	self.root = Tk()
-	self.root.title("SnakeAI")
-	self.w = Canvas(self.root, width=self.width*self.scale, height=self.height*self.scale)
-	self.w.pack()
+	self.root.title("SnA*ke")
 	self.grid = []
+	self.sidebar = Frame(self.root, width=200, bg='white', height=500, relief='sunken', borderwidth=2)
+	self.sidebar.pack(expand=True, fill='y', side='left', anchor='nw')	
+	self.mainarea = Frame(self.root, bg='#CCC', width=500, height=500)
+	self.mainarea.pack(expand=True, fill='both', side='right')
+	self.w = Canvas(self.mainarea, width=self.width*self.scale, height=self.height*self.scale)
+	self.w.pack()
 	for i in range(self.width*self.height):
 	    x= (i%self.width)*self.scale
 	    y= (i/self.width)*self.scale
 	    self.grid.append(self.w.create_rectangle(x,y,x+self.scale,y+self.scale, fill="white"))
+	self.scoreboard = Label(self.sidebar, text="0")
+	self.scoreboard.pack()
 	self.on = True
 	self.redraw(100)
 
@@ -53,6 +60,7 @@ class SnakeGame(Tk):
         #If the snake head is on a food tile then retain the end of the snake body
         #and removee the food from the board
         if self.head in self.food:
+	    self.score += 1
             self.food.remove(self.head)
             r = randint(0,399)
 	    while r in self.snake or r in self.food:
@@ -74,7 +82,7 @@ class SnakeGame(Tk):
         closed = []
         path = self.astar(frontier,closed)
         if path == None:
-            return self.idle()
+            return self.idle() 
         move = path[2]
         diff = self.head - move
         if diff == self.width:
@@ -89,6 +97,7 @@ class SnakeGame(Tk):
         
         
     def idle(self):            
+	print "idled"
 	h = self.head
 	moves = []
 	if h-self.width>0 and not h-self.width in self.snake:
@@ -116,6 +125,12 @@ class SnakeGame(Tk):
         #Expand upon the shortest path
         #Do not include paths that lead into a wall, snake or indexes in closed
         #When a possible path is found update its score and add it to the frontier
+	#Update snake
+	snake = self.snake[:]
+	for i in shortest[2:]:
+		snake.pop()
+		snake.insert(0, i)
+	
         #Expansion of shortest path BEGIN
         #End of shortest path index
         n = shortest[len(shortest)-1]
@@ -187,6 +202,7 @@ class SnakeGame(Tk):
         self.on = False
 
     def redraw(self, delay):
+	self.scoreboard.configure(text=str(self.score))
 	if self.on:	
 		self.update(self.ai())
 		for i in range(len(self.board)):
@@ -196,7 +212,7 @@ class SnakeGame(Tk):
 			elif i in self.food:
 			    color = "gray"
 			self.w.itemconfig(self.grid[i], fill=color)
-				
+					
 		self.after(delay, lambda: self.redraw(delay))
 
 if __name__ == '__main__':
