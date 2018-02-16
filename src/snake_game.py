@@ -79,7 +79,7 @@ class SnakeGame(Tk):
         frontier = [[0,self.head]]
         closed = []
         path = self.astar(frontier,closed)
-        if path == None:
+        if path == None or len(path)<3:
             return self.idle() 
 	print(path)
         move = path[2]
@@ -109,7 +109,12 @@ class SnakeGame(Tk):
 		moves.append(SnakeGame.LEFT)
 	if not moves:
 		return None
-	return choice(moves)
+	score = 9999
+	best = None
+	for i in moves:
+		if self.h(i+h) < best:
+			best = i
+	return best
 	
 
     def astar(self,frontier,closed):
@@ -200,7 +205,7 @@ class SnakeGame(Tk):
             if rows<h_rows and cols<h_cols:
                 h_rows = rows
                 h_cols = cols
-        return h_cols + h_rows + rect_a       
+        return h_cols + h_rows + (rect_a-len(snake))
                 
     def gameover(self):
         print("Game Over")
