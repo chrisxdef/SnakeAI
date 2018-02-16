@@ -1,7 +1,6 @@
 from time import sleep
 from random import randint
 from random import choice
-import numpy as np
 from Tkinter import *
 
 class SnakeGame(Tk):
@@ -20,12 +19,11 @@ class SnakeGame(Tk):
         self.food = [10]
         self.last_input = None
        	self.scale = 16
-	self.root = Tk()
-	self.root.title("SnA*ke")
+	self.title("SnA*ke")
 	self.grid = []
-	self.sidebar = Frame(self.root, width=200, bg='white', height=500, relief='sunken', borderwidth=2)
+	self.sidebar = Frame(self, width=200, bg='white', height=500, relief='sunken', borderwidth=2)
 	self.sidebar.pack(expand=True, fill='y', side='left', anchor='nw')	
-	self.mainarea = Frame(self.root, bg='#CCC', width=500, height=500)
+	self.mainarea = Frame(self, bg='#CCC', width=500, height=500)
 	self.mainarea.pack(expand=True, fill='both', side='right')
 	self.w = Canvas(self.mainarea, width=self.width*self.scale, height=self.height*self.scale)
 	self.w.pack()
@@ -123,8 +121,6 @@ class SnakeGame(Tk):
             if p[0] < shortest[0]:
                 shortest = p
         frontier.remove(shortest)
-	if len(frontier)<3 and len(closed) > 3:
-		return choice(frontier)
         #Expand upon the shortest path
         #Do not include paths that lead into a wall, snake or indexes in closed
         #When a possible path is found update its score and add it to the frontier
@@ -146,25 +142,25 @@ class SnakeGame(Tk):
             #UP
             if n>self.width and not n-self.width in self.snake and not n-self.width in closed:
                 up = shortest[:]
-                up[0] = len(up) + self.h(n-self.width)
+                up[0] = len(up) + self.h(n-self.width, snake)
                 up.append(n-self.width)
                 frontier.append(up)
             #DOWN
             if n<(self.width-1)*self.height-1 and not n+self.width in self.snake and not n+self.width in closed:
                 down = shortest[:]
-                down[0] = len(down) + self.h(n+self.width)
+                down[0] = len(down) + self.h(n+self.width, snake)
                 down.append(n+self.width)
                 frontier.append(down)
             #LEFT
             if n%self.width!=0 and not n-1 in self.snake and not n-1 in closed:
                 left = shortest[:]
-                left[0] = len(left) + self.h(n-1)
+                left[0] = len(left) + self.h(n-1, snake)
                 left.append(n-1)
                 frontier.append(left)
             #RIGHT
             if n%self.width!=self.width-1 and not n+1 in self.snake and not n+1 in closed:
                 right = shortest[:]
-                right[0] = len(right) + self.h(n+1)
+                right[0] = len(right) + self.h(n+1, snake)
                 right.append(n+1)
                 frontier.append(right)
             #END
@@ -173,8 +169,26 @@ class SnakeGame(Tk):
         
     def h(self, n, snake=None):
 	if snake == None:
-		snake = self.snake
+	    snake = self.snake
 	#Implement a heuristic that uses the position of the snake
+	min_row = self.height
+	max_row = 0
+	min_col = self.width
+	max_col = 0
+	for i in snake:
+	    row = i/self.width
+	    col = i%self.width
+	    if row > max_row:
+		max_row = row
+	    if row < min_row:
+		min_row = row
+	    if col > max_col:
+		max_col = col
+	    if col < min_col:
+		min_col = col
+	rect_w = max_col + min_col + 1
+	rect_h = max_row + min_row + 1
+	rect_a = rect_w * rect_h
 
         h_rows = self.height*self.width
         h_cols = self.height*self.width
@@ -186,7 +200,7 @@ class SnakeGame(Tk):
             if rows<h_rows and cols<h_cols:
                 h_rows = rows
                 h_cols = cols
-        return h_cols + h_rows        
+        return h_cols + h_rows + rect_a       
                 
     def gameover(self):
         print("Game Over")
