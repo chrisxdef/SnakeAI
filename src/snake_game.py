@@ -3,13 +3,15 @@ from random import *
 import json
 import operator
 import math
+from Tkinter import *
 
-class SnakeGame():
+class SnakeGame(Tk):
     UP=-20
     RIGHT=1
     DOWN=20
     LEFT=-1
     def __init__(self, *args, **kwargs):
+        Tk.__init__(self, *args, **kwargs)
         self.width = 20
         self.bias = [1.0, 1.0, 1.0, 1.0,1.0]
         self.key = "1.0:1.0:1.0:1.0:1.0"
@@ -22,27 +24,27 @@ class SnakeGame():
         self.food = [10]
         self.last_input = None
         self.scale = 16
-        #self.title("SnA*ke")
-        #self.grid = []
-        #self.sidebar = Frame(self, width=200, bg='white', height=500, relief='sunken', borderwidth=2)
-        #self.sidebar.pack(expand=True, fill='y', side='left', anchor='nw')     
-        #self.mainarea = Frame(self, bg='#CCC', width=500, height=500)
-        #self.mainarea.pack(expand=True, fill='both', side='right')
-        #self.w = Canvas(self.mainarea, width=self.width*self.scale, height=self.height*self.scale)
-        #self.w.pack()
-        #for i in range(self.width*self.height):
-        #    x= (i%self.width)*self.scale
-        #    y= (i/self.width)*self.scale
-        #    self.grid.append(self.w.create_rectangle(x,y,x+self.scale,y+self.scale, fill="white"))
-        #self.scoreboard = Label(self.sidebar, text="0")
-        #self.scoreboard.pack()
+        self.title("SnA*ke")
+        self.grid = []
+        self.sidebar = Frame(self, width=200, bg='white', height=500, relief='sunken', borderwidth=2)
+        self.sidebar.pack(expand=True, fill='y', side='left', anchor='nw')     
+        self.mainarea = Frame(self, bg='#CCC', width=500, height=500)
+        self.mainarea.pack(expand=True, fill='both', side='right')
+        self.w = Canvas(self.mainarea, width=self.width*self.scale, height=self.height*self.scale)
+        self.w.pack()
+        for i in range(self.width*self.height):
+            x= (i%self.width)*self.scale
+            y= (i/self.width)*self.scale
+            self.grid.append(self.w.create_rectangle(x,y,x+self.scale,y+self.scale, fill="white"))
+        self.scoreboard = Label(self.sidebar, text="0")
+        self.scoreboard.pack()
         self.on = True
 
         self.population = []
         self.initPopulation()
 
         self.c = 0
-
+        redraw(5)
 
     def update(self,cmd):
         self.c+=1
@@ -268,18 +270,20 @@ class SnakeGame():
         print(len(self.population)) 
         
 
-    def mainloop(self):
-        #self.scoreboard.configure(text=str(self.score))
+    def redraw(self, delay):
+        self.scoreboard.configure(text=str(self.score))
         while(self.on):     
-                self.update(self.ai())
-        #       for i in range(len(self.board)):
-        #               color = "white"
-        #               if i in self.snake:
-        #                   color = "black"
-        #               elif i in self.food:
-        #                   color = "gray"
-        #               self.w.itemconfig(self.grid[i], fill=color)
-                                        
+            self.update(self.ai())
+            for i in range(len(self.board)):
+                color = "white"
+                if i in self.snake:
+                    color = "black"
+                elif i in self.food:
+                    color = "gray"
+                self.w.itemconfig(self.grid[i], fill=color)
+            self.after(delay, lambda: self.redraw(delay))
+
+                             
 
     def setBias(self, bias):
         self.bias = bias[:]
