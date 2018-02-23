@@ -103,7 +103,7 @@ class SnakeGame(Tk):
         frontier = [n]
         closed = []
         while frontier:
-            if len(closed) > len(snake)*2:
+            if len(closed) > len(snake)*3:
                 return closed
             k = frontier.pop()
             closed.append(k)
@@ -156,10 +156,12 @@ class SnakeGame(Tk):
                 moves.append(SnakeGame.LEFT)
         if not moves:
                 return None
-        best = 9998
+        best = 9999
         for i in moves:
                 if self.h(i+h) < best:
                         best = i
+	if best == 9999:
+		best = self.last_input
         return best
     
 
@@ -196,31 +198,13 @@ class SnakeGame(Tk):
         #close this index
         if not n in closed:
             closed.append(n)
-            #UP
-            if n>self.width and not n-self.width in self.snake and not n-self.width in closed:
-                up = shortest[:]
-                up[0] = len(up) + self.h(n-self.width, snake)
-                up.append(n-self.width)
-                frontier.append(up)
-            #DOWN
-            if n<(self.width-1)*self.height-1 and not n+self.width in self.snake and not n+self.width in closed:
-                down = shortest[:]
-                down[0] = len(down) + self.h(n+self.width, snake)
-                down.append(n+self.width)
-                frontier.append(down)
-            #LEFT
-            if n%self.width!=0 and not n-1 in self.snake and not n-1 in closed:
-                left = shortest[:]
-                left[0] = len(left) + self.h(n-1, snake)
-                left.append(n-1)
-                frontier.append(left)
-            #RIGHT
-            if n%self.width!=self.width-1 and not n+1 in self.snake and not n+1 in closed:
-                right = shortest[:]
-                right[0] = len(right) + self.h(n+1, snake)
-                right.append(n+1)
-                frontier.append(right)
-            #END
+	    adj = self.getAdjacent(n, snake)
+	    for a in adj:
+		if not a in closed:
+		    path = shortest[:]
+		    path[0] = len(path) + self.h(a, snake)
+		    path.append(a)
+		    frontier.append(path)
         return self.astar(frontier,closed,best)
 
         
@@ -265,9 +249,6 @@ class SnakeGame(Tk):
         #distance to food
         h_rows = self.height*self.width
         h_cols = self.height*self.width
-        if not food:
-            h_rows = 0
-            h_cols = 0
         for f in self.food:
             #number of rows from n to f
             rows = abs(n/self.width-f/self.width)
