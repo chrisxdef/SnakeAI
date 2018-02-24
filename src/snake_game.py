@@ -8,50 +8,57 @@ class SnakeGame(Tk):
     RIGHT=1
     DOWN=20
     LEFT=-1
+    NO_PATH=0
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
         self.width = 20
         self.height = 20
-        self.board = self.width*self.height*[0]
         self.score = 0
         self.head = 22
         self.snake = [self.head,self.head+self.width,self.head+(2*self.width)]
         self.food = [10]
         self.last_input = None
         self.scale = 16
+	self.path = []
+
+	#Window
         self.title("SnA*ke")
-        self.grid = []
         self.sidebar = Frame(self, width=200, bg='white', height=500, relief='sunken', borderwidth=2)
         self.sidebar.pack(expand=True, fill='y', side='left', anchor='nw')  
         self.mainarea = Frame(self, bg='#CCC', width=500, height=500)
         self.mainarea.pack(expand=True, fill='both', side='right')
+
+	#Draw
         self.w = Canvas(self.mainarea, width=self.width*self.scale, height=self.height*self.scale)
         self.w.pack()
+        self.grid = self.width*self.height*[0]
         for i in range(self.width*self.height):
             x= (i%self.width)*self.scale
             y= (i/self.width)*self.scale
-            self.grid.append(self.w.create_rectangle(x,y,x+self.scale,y+self.scale, fill="white"))
+            self.grid[i]= self.w.create_rectangle(x,y,x+self.scale,y+self.scale, fill="white")
+
         self.scoreboard = Label(self.sidebar, text="0")
         self.scoreboard.pack()
+
         self.on = True
         self.redraw(5)
 
+    def moveHead(self, move, head=None):
+	if head==None:
+	    head = self.head
+	n = head+move
+	if n<0 or n>self.height*self.width or move==SnakeGame.RIGHT and self.head%self.width==self.width-1 and n%self.width==0 or move==SnakeGame.LEFT and self.head%self.width==0 and n%self.width==self.width-1:
+	    return -1 
+	return n 
+
     def update(self,cmd):
-        if cmd == None:
-            cmd = self.last_input
-        self.last_input = cmd
         #Update head location and check for wall collision
-        if cmd==SnakeGame.UP and self.head>self.width-1:
-            self.head+=SnakeGame.UP
-        elif cmd==SnakeGame.RIGHT and self.head%self.width!=self.width-1:
-            self.head+=SnakeGame.RIGHT
-        elif cmd==SnakeGame.DOWN and self.head/self.width!=self.height-1:
-            self.head+=SnakeGame.DOWN
-        elif cmd==SnakeGame.LEFT and self.head%self.width!=0:
-            self.head+=SnakeGame.LEFT
-        else:
-            self.gameover()
-            return
+	move = self.moveHead(cmd)
+	if cmd==SnakeGame.NO_PATH or move<0:
+	    self.gameover()
+ 	    return	
+	self.head+=cmd
+        self.last_input = cmd
         #Update Snake location
         #By removing the last location the array now represent the new location of
         #the snake body without the new head locaiton
@@ -98,13 +105,14 @@ class SnakeGame(Tk):
         return adj
 
     def getAllAdjacent(self, n, snake=None):
+	search = len(snake)*(3/2)
         if snake == None:
             snake = self.snake
         frontier = [n]
         closed = []
         while frontier:
-            if len(closed) > len(snake)*3:
-                return closed
+	    if len(closed)>search:
+		return closed
             k = frontier.pop()
             closed.append(k)
             adj = self.getAdjacent(k, snake)
@@ -122,21 +130,13 @@ class SnakeGame(Tk):
     def ai(self):
         frontier = [[9999,self.head]]
         closed = []
-        path = self.astar(frontier,closed)
-        if path == None or len(path)<3:
-            print(len(path))
-            return self.idle()
-        move = path[2]
-        diff = self.head - move
-        if diff == self.width:
-            return SnakeGame.UP
-        if diff == -self.width:
-            return SnakeGame.DOWN
-        if diff == -1:
-            return SnakeGame.RIGHT
-        if diff == 1:
-            return SnakeGame.LEFT
-        return diff
+        a = self.astar(frontier,closed)
+	path = []
+	if len(a) > 3:
+	    for i in range(2,len(a)):
+		path.append(a[i]-a[i-1])
+	    return path
+        return [self.idle()]
         
     def idle(self):            
         h = self.head
@@ -161,7 +161,7 @@ class SnakeGame(Tk):
                 if self.h(i+h) < best:
                         best = i
 	if best == 9999:
-		best = self.last_input
+		best = SnakeGame.NO_PATH
         return best
     
 
@@ -175,9 +175,7 @@ class SnakeGame(Tk):
                 shortest = p
         frontier.remove(shortest)
 
-        if best == None:
-            best = shortest
-        elif shortest[0]-len(shortest) < best[0]-len(best):
+        if best==None or shortest[0]-len(shortest) < best[0]-len(best):
             best = shortest
 
         #Expand upon the shortest path
@@ -263,7 +261,7 @@ class SnakeGame(Tk):
 
         
         
-        return (h_cols + h_rows) + ((rect_a-len(snake)) + (len(snake) - h_adj) + h_edge)*2
+        return (h_cols + h_rows) + ((rect_a-len(snake)*2) + (len(snake)*2 - h_adj) + h_edge*2)*2
 
     def gameover(self):
         print("Game Over")
@@ -272,9 +270,13 @@ class SnakeGame(Tk):
 
     def redraw(self, delay):
         self.scoreboard.configure(text=str(self.score))
-        if self.on: 
-            self.update(self.ai())
-            for i in range(len(self.board)):
+        if self.on:
+	    if not self.path:
+		self.path = self.ai()
+	    move = self.path[0]
+	    self.update(move)
+	    self.path.remove(move)
+            for i in range(len(self.grid)):
                 color = "white"
                 if i in self.snake:
                     color = "black"
