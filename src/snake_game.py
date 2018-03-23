@@ -276,12 +276,17 @@ class SnakeGame(Tk):
 	    move = self.path[0]
 	    self.update(move)
 	    self.path.remove(move)
-            for i in range(len(self.grid)):
+             for i in range(len(self.grid)):
                 color = "white"
                 if i in self.snake:
-                    color = "black"
+                    indexOfi = self.snake.index(i)
+                    if indexOfi == 0:
+                        color = '#%02x%02x%02x' % (0, 255, 0)
+                    else:
+                        rgb = int(25 * math.log(indexOfi+1))
+                        color = '#%02x%02x%02x' % (rgb, rgb, rgb)
                 elif i in self.food:
-                    color = "gray"
+                    color =  '#%02x%02x%02x' % (0, 0, 255)
                 self.w.itemconfig(self.grid[i], fill=color)
                         
             self.after(delay, lambda: self.redraw(delay))
