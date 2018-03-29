@@ -2,6 +2,9 @@ from time import sleep
 from random import randint
 from random import choice
 from Tkinter import *
+import os
+import json
+
 
 class SnakeGame(Tk):
     UP=-20
@@ -20,6 +23,10 @@ class SnakeGame(Tk):
         self.last_input = None
         self.scale = 16
 	self.path = []
+
+        #learning data mine
+        self.memory = []
+        self.n_moves = 0
 
 	#Window
         self.title("SnA*ke")
@@ -41,12 +48,14 @@ class SnakeGame(Tk):
         self.scoreboard.pack()
 
         self.on = True
-        self.redraw(5)
+        self.redraw(1)
 
     def moveHead(self, move, head=None):
-	if head==None:
+        if move==None:
+            return -1
+        if head==None:
 	    head = self.head
-	n = head+move
+        n = head+move
 	if n<0 or n>self.height*self.width or move==SnakeGame.RIGHT and self.head%self.width==self.width-1 and n%self.width==0 or move==SnakeGame.LEFT and self.head%self.width==0 and n%self.width==self.width-1:
 	    return -1 
 	return n 
@@ -135,7 +144,7 @@ class SnakeGame(Tk):
 	if len(a) > 3:
 	    for i in range(2,len(a)):
 		path.append(a[i]-a[i-1])
-	    return path
+            return path
         return [self.idle()]
         
     def idle(self):            
@@ -155,7 +164,7 @@ class SnakeGame(Tk):
         if h%self.width!=0 and not h+SnakeGame.LEFT in self.snake:
                 moves.append(SnakeGame.LEFT)
         if not moves:
-                return None
+                return SnakeGame.NO_PATH
         best = 9999
         for i in moves:
                 if self.h(i+h) < best:
@@ -268,23 +277,51 @@ class SnakeGame(Tk):
         print(self.last_input)
         self.on = False
 
+    def reset(self,error=False):
+        if not error and self.n_moves>0:
+            self.memory.append([self.width, self.height, self.score, self.n_moves, float(self.score)/float(self.n_moves)])
+            #write memory to a file
+            n = len(os.listdir('./memory'))
+            print "write to ./memory/snake-game-" + str(n)
+            f  = open("./memory/snake-game-" + str(n), 'w')
+            d = json.dumps(self.memory)
+            f.write(d)
+            f.close()
+            print "done"
+
+        self.snake = [22,22+self.width,22+(2*self.width)]
+        self.food = [randint(0,(self.width*self.height)-1)]
+        self.score = 0
+        self.path = []
+
+        self.memory = []
+        self.n_moves = 0
+        self.on = True
+
     def redraw(self, delay):
-        self.scoreboard.configure(text=str(self.score))
-        if self.on:
-	    if not self.path:
-		self.path = self.ai()
-	    move = self.path[0]
-	    self.update(move)
-	    self.path.remove(move)
-            for i in range(len(self.grid)):
-                color = "white"
-                if i in self.snake:
-                    color = "black"
-                elif i in self.food:
-                    color = "gray"
-                self.w.itemconfig(self.grid[i], fill=color)
-                        
-            self.after(delay, lambda: self.redraw(delay))
+        try:
+            self.scoreboard.configure(text=str(self.score))
+            if self.on:
+                if not self.path:
+                    self.path = self.ai()
+                    self.memory.append([self.snake, self.food, self.path])
+                    self.n_moves += len(self.path)
+                move = self.path[0]
+                self.update(move)
+                self.path.remove(move)
+                for i in range(len(self.grid)):
+                    color = "white"
+                    if i in self.snake:
+                        color = "black"
+                    elif i in self.food:
+                        color = "gray"
+                    self.w.itemconfig(self.grid[i], fill=color)
+            else:
+                self.reset()
+        except ValueError, e:
+            self.reset(error=True)
+
+        self.after(delay, lambda: self.redraw(delay))
 
 if __name__ == '__main__':
     game = SnakeGame()
