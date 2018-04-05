@@ -1,14 +1,15 @@
-from time import sleep
+from time import sleep, time
 from random import randint
 import os
 import json
 from snake_enum import Direction
-from snake_algo import SnakeAlgo
+from snake_algo import SnakeAlgo, NoPath
+from snake_game_viewer import SnakeGameViewer
 
 class SnakeGameModel():
     def __init__(self):
-        self.width = 21
-        self.height = 21
+        self.width = 25
+        self.height = 25
         self.snake = [370, 370+self.width, 370+(2*self.width)]
         self.score = 0
         self.n_turns = 0
@@ -19,6 +20,8 @@ class SnakeGameModel():
         self.spawn_food()
         self.snake_direction = Direction.UP
         self.ai = SnakeAlgo(self.config_dictionary())
+        self.viewer = SnakeGameViewer(self.config_dictionary())
+        self.game_data = None
 
     def resolve_direction(self):
         if self.snake_direction == Direction.UP:
@@ -83,14 +86,12 @@ class SnakeGameModel():
         if not self.collect_food():
             # When we do not collect food, simply remove the tail of the list
             self.snake.pop()
-        print self.snake
 
     # Currently calls spawn food as food is collected
     def collect_food(self):
         if self.snake[0] in self.food:
             self.food.remove(self.snake[0])
             self.score += 1
-            print 'Nom Nom %d' % self.score
             self.spawn_food()
             return True
         return False
@@ -98,19 +99,34 @@ class SnakeGameModel():
     def main(self):
         try:
             while True:
-                print self.game_state_dictionary()
                 self.snake_direction = self.ai.pick_a_direction(self.game_state_dictionary())
-                print self.snake_direction
                 self.update_snake()
+                self.viewer.update(self.game_state_dictionary())
                 if self.game_over():
                     print 'Game Over\n\n'
                     return 1
                 self.n_turns += 1
-                sleep(0.4)
+                sleep(0.03)
         except KeyboardInterrupt:
-            print "Exiting game"
+            print "Keyboard Interrupt - Exiting game"
+            return 0
+        except NoPath:
             return 0
 
+    def record_game_data(self):
+        if self.game_data == None:
+            self.game_data = { 'Game_Model' : self.config_dictionary() }
+            self.game_data['Game_Model']['Data'] = []
+        data = self.game_state_dictionary()
+        data['score_gain']  = 0
+        self.game_data['Game_Model']['Data'].append(data)
+
+    def save_game_data(self):
+        for data in self.game_data['Game_Model']['Data']:
+            data['score_gain'] = self.score - data['score']
+        f = open('./game_data/training_data.json', 'w')
+        f.write(json.dumps(self.game_data))
+        f.close()
 
 if __name__ == '__main__':
     game = SnakeGameModel()

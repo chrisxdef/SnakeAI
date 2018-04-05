@@ -237,8 +237,8 @@ class SnakeGame(Tk):
                 max_col = col
             if col < min_col:
                 min_col = col
-        rect_w = max_col + min_col + 1
-        rect_h = max_row + min_row + 1
+        rect_w = max_col - min_col + 1
+        rect_h = max_row - min_row + 1
         rect_a = rect_w * rect_h
 
        #get the number of cols away head is from rect
@@ -270,7 +270,8 @@ class SnakeGame(Tk):
 
         
         
-        return (h_cols + h_rows) + ((rect_a-len(snake)*2) + (len(snake)*2 - h_adj) + h_edge*2)*2
+        #return (h_cols + h_rows) + ((rect_a-len(snake)*2) + (len(snake)*2 - h_adj) + h_edge*2)*2
+        return (h_cols + h_rows) - (rect_a) * 2 - h_adj
 
     def gameover(self):
         print("Game Over")
@@ -278,17 +279,6 @@ class SnakeGame(Tk):
         self.on = False
 
     def reset(self,error=False):
-        if not error and self.n_moves>0:
-            self.memory.append([self.width, self.height, self.score, self.n_moves, float(self.score)/float(self.n_moves)])
-            #write memory to a file
-            n = len(os.listdir('./memory'))
-            print "write to ./memory/snake-game-" + str(n)
-            f  = open("./memory/snake-game-" + str(n), 'w')
-            d = json.dumps(self.memory)
-            f.write(d)
-            f.close()
-            print "done"
-
         self.snake = [22,22+self.width,22+(2*self.width)]
         self.food = [randint(0,(self.width*self.height)-1)]
         self.score = 0
