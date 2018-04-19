@@ -1,5 +1,6 @@
 import subprocess as sp
 from sys import stdout
+from time import sleep
 
 class SnakeGameViewer():
     def __init__(self, config):
@@ -30,3 +31,4 @@ class SnakeGameViewer():
         stdout.flush()
 
         print score
+        sleep(0.01)

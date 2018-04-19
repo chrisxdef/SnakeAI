@@ -45,7 +45,7 @@ class SnakeAlgo():
     @staticmethod
     def diff(p1, p2):
         p1_x, p1_y = SnakeAlgo.index_to_coord(p1)
-        p2_x, p2_y = SnakeAlgo.index_to_coord(p2)
+        p2_x, p2_y = SnakeAlgo.index_to_coord(p3)
         return abs(p1_x - p2_x), abs(p1_y - p2_y)
 
     def pick_a_direction(self, game_state):
@@ -146,14 +146,6 @@ class SnakePathModel():
         head        = self.snake[0]
         food        = self.food[0]
         tail        = self.snake[len(self.snake)-1]
-        #h_box       = self.h_box()
-        #local_center    = self.locate_center_food() 
-        #h_food_local = self.h_center(SnakeAlgo.index_to_coord(local_center))
-        #center      = ( SnakeAlgo.Width / 2, SnakeAlgo.Height / 2 )
-        #h_centered  = self.h_center(center)
-        #h_rect_a    = self.h_rect()
-        #diff_x, diff_y  = SnakeAlgo.diff_squared(head, local_center)
-        #h_head      = math.sqrt(diff_x + diff_y)
         food_head   = SnakeAlgo.diff(head, food)
         food_head   = food_head[0] + food_head[1]
         food_tail   = SnakeAlgo.diff(tail, food)
@@ -164,81 +156,6 @@ class SnakePathModel():
         h = (food_tail + head_tail) + food_head
 
         return h
-
-    def h_center(self, center):
-        center_x, center_y = center
-        h_snake = 0
-        for i in self.snake[1:]:
-            x, y = SnakeAlgo.index_to_coord(i)
-            h_snake += math.sqrt( (center_x - x)**2 + (center_y - y)**2 )
-        return h_snake
-
-
-    def locate_center_food(self):
-        diam        = math.sqrt(len(self.snake)) + 2
-        rad         = diam / 2
-
-        food        = self.food[0]
-        
-        valid_tile  = False
-        move      = 0
-        center = 0
-        while not valid_tile:
-            valid_tile = True
-            move = SnakeAlgo.Moves[i_move]
-            move = move * -1
-            i = 1
-            while valid_tile and i <= rad:
-                center = food + i*move
-                if center in SnakeAlgo.Bounds:
-                    valid_tile = False
-                i += 1
-            i_move += 1
-        
-        return center
-
-    def h_box(self):
-        len_snake   = len(self.snake)
-        opt_r       = (math.sqrt(len_snake)+2) / 2
-
-        h_box       = 0
-        diff        = 0
-
-        for index in range(1, len_snake):
-            if index % opt_r == 0:
-                h_box   += diff
-                diff    = 0
-            diff += abs( self.snake[ index ] - self.snake[ index-1 ] )
-   
-        h_box += diff
-
-        return h_box        
-                
-    def h_rect(self):
-        min_row = SnakeAlgo.Height
-        max_row = 0
-        min_col = SnakeAlgo.Width
-        max_col = 0
-        for i in self.snake:
-            row = i/SnakeAlgo.Width
-            col = i%SnakeAlgo.Width
-            if row > max_row:
-                max_row = row
-            if row < min_row:
-                min_row = row
-            if col > max_col:
-                max_col = col
-            if col < min_col:
-                min_col = col
-        rect_w = max_col - min_col + 1
-        rect_h = max_row - min_row + 1
-        rect_a = rect_w * rect_h
-                    
-        return rect_a
-
-    def h_expand(self):
-        expansion_len = len(self.expand())
-        return (4 - expansion_len)
 
     # astar to locate tail and helper functions
     def h_tail(self, head):

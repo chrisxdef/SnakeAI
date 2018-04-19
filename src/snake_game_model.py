@@ -10,7 +10,7 @@ class SnakeGameModel():
     def __init__(self):
         self.width = 25
         self.height = 25
-        self.snake = [370, 370+self.width, 370+(2*self.width)]
+        self.snake = [370, 370+self.width, 370+(2*self.width), 370+(3*self.width), 370+(4*self.width), 370+(5*self.width)]
         self.score = 0
         self.n_turns = 0
         self.boundaries = []
@@ -106,27 +106,12 @@ class SnakeGameModel():
                     print 'Game Over\n\n'
                     return 1
                 self.n_turns += 1
-                sleep(0.03)
         except KeyboardInterrupt:
             print "Keyboard Interrupt - Exiting game"
             return 0
         except NoPath:
+            print 'No Path'
             return 0
-
-    def record_game_data(self):
-        if self.game_data == None:
-            self.game_data = { 'Game_Model' : self.config_dictionary() }
-            self.game_data['Game_Model']['Data'] = []
-        data = self.game_state_dictionary()
-        data['score_gain']  = 0
-        self.game_data['Game_Model']['Data'].append(data)
-
-    def save_game_data(self):
-        for data in self.game_data['Game_Model']['Data']:
-            data['score_gain'] = self.score - data['score']
-        f = open('./game_data/training_data.json', 'w')
-        f.write(json.dumps(self.game_data))
-        f.close()
 
 if __name__ == '__main__':
     game = SnakeGameModel()
