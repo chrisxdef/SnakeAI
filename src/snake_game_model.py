@@ -1,7 +1,4 @@
-from time import sleep, time
 from random import randint
-import os
-import json
 from snake_enum import Direction
 from snake_algo import SnakeAlgo, NoPath
 from snake_game_viewer import SnakeGameViewer

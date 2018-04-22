@@ -149,7 +149,7 @@ class SnakePathModel():
    
 
     def h(self):
-        tail        = self.snake[len(self.snake)-1]
+        food            = self.food[0]
         h_local_center    = self.h_center(self.local_center())
         h_food_center = self.h_center(food)
         h_rect_a    = self.h_rect()
