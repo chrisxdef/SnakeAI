@@ -1,8 +1,6 @@
 from snake_enum import Direction
 from copy import deepcopy
 from Queue import PriorityQueue, Empty
-from time import sleep, time
-import math
 
 class NoPath(Exception):
     pass
@@ -45,9 +43,12 @@ class SnakeAlgo():
     @staticmethod
     def diff(p1, p2):
         p1_x, p1_y = SnakeAlgo.index_to_coord(p1)
-        p2_x, p2_y = SnakeAlgo.index_to_coord(p3)
+        p2_x, p2_y = SnakeAlgo.index_to_coord(p2)
         return abs(p1_x - p2_x), abs(p1_y - p2_y)
 
+    # if the current path is not emtpy
+    # Returns the next direction in the current path
+    # else calls astar to build a new path
     def pick_a_direction(self, game_state):
         if self.path:
             return self.path.pop(0)
@@ -79,30 +80,35 @@ class SnakeAlgo():
             best_path = frontier.get(block=False)
             # Check if this is a solution
             # update best seen
-            if best_path[1].check_for_food() and best_path[1].astar_tail():
-                return best_path[1].path
-            if best_path[0] < best_seen[0]:
-               best_seen = (best_path[0], best_path[1].path)
-            # Check if this path has been closed
-            to_close = ( best_path[0], best_path[1].snake[0] )
-            expand = True
-            for c in closed:
-                if to_close[1] == c[1]:
-                    if to_close[0] < c[0]:
-                        closed.remove(c)
-                    else:
-                        expand = False
-                    break
-            if expand:
-                closed.append(to_close)
-                # Expand the best path
-                expanded_list = best_path[1].expand()
-                for path in expanded_list:
-                    if path.h_expand()<4:
-                        frontier.put( ( path.h(), path ) )
+            if best_path[1].check_for_food():
+                if best_path[1].astar_tail():
+                    return best_path[1].path
+            else:
+                if best_path[0] < best_seen[0]:
+                   best_seen = (best_path[0], best_path[1].path)
+                # Check if this path has been closed
+                to_close = ( best_path[0], best_path[1].snake[0] )
+                expand = True
+                for c in closed:
+                    if to_close[1] == c[1]:
+                        if to_close[0] < c[0]:
+                            closed.remove(c)
+                        else:
+                            expand = False
+                        break
+                if expand:
+                    closed.append(to_close)
+                    # Expand the best path
+                    expanded_list = best_path[1].expand()
+                    for path in expanded_list:
+                        if path.h_expand()<4:
+                            frontier.put( ( path.h(), path ) )
 
         return best_seen[1]
 
+# A class the represents a node in the astar algorithm
+# When this node expands it simulates a game move in every direction and
+# returns valid moves and their game state
 class SnakePathModel():
     def __init__(self, snake, food, path):
         self.snake  = deepcopy(snake)
@@ -143,19 +149,84 @@ class SnakePathModel():
    
 
     def h(self):
-        head        = self.snake[0]
-        food        = self.food[0]
         tail        = self.snake[len(self.snake)-1]
-        food_head   = SnakeAlgo.diff(head, food)
-        food_head   = food_head[0] + food_head[1]
-        food_tail   = SnakeAlgo.diff(tail, food)
-        food_tail   = (food_tail[0]-1) + (food_tail[1] - 1)
-        head_tail   = SnakeAlgo.diff(tail, head)
-        head_tail   = (head_tail[0]-1) + (head_tail[1] - 1)
+        h_local_center    = self.h_center(self.local_center())
+        h_food_center = self.h_center(food)
+        h_rect_a    = self.h_rect()
 
-        h = (food_tail + head_tail) + food_head
+        h = h_food_center + h_local_center + (h_rect_a - len(self.snake))
 
         return h
+
+    # given a center location, return a heuristic value for how far each
+    # part of the snake is away
+    def h_center(self, center):
+        center_x, center_y = SnakeAlgo.index_to_coord(center)
+        h_snake = 0
+        for i in self.snake[1:]:
+            x, y = SnakeAlgo.index_to_coord(i)
+            h_snake += math.sqrt( (center_x - x)**2 + (center_y - y)**2 )
+        return h_snake
+
+
+    # find a location equally between the current food and the cetner of the map
+    def local_center(self):
+        map_center  = SnakeAlgo.Width / 2 + SnakeAlgo.Height / 2
+        diam        = math.sqrt(len(self.snake)) + 2
+        rad         = diam / 2
+
+        food        = self.food[0]
+        
+        valid_tile  = False
+        i_move      = 0
+        centered_dist = 999
+        centered = 0
+        center = 0
+        i = 1
+        while i_move < 4:
+            move = SnakeAlgo.Moves[i_move]
+            center = food + i*move
+            if center in SnakeAlgo.Bounds:
+                i_move += 1
+                i = 1
+            else:
+                i += 1
+                if i > rad:
+                    i_move += 1
+                    i = 1
+                    center_dist = SnakeAlgo.diff(center, map_center)
+                    center_dist = center_dist[0] + center_dist[1]
+                    if centered_dist > center_dist:
+                        centered_dist = center_dist
+                        centered = center
+        
+        return centered
+
+    def h_rect(self):
+        min_row = SnakeAlgo.Height
+        max_row = 0
+        min_col = SnakeAlgo.Width
+        max_col = 0
+        for i in self.snake:
+            row = i/SnakeAlgo.Width
+            col = i%SnakeAlgo.Width
+            if row > max_row:
+                max_row = row
+            if row < min_row:
+                min_row = row
+            if col > max_col:
+                max_col = col
+            if col < min_col:
+                min_col = col
+        rect_w = max_col - min_col + 1
+        rect_h = max_row - min_row + 1
+        rect_a = rect_w * rect_h
+                    
+        return rect_a
+
+    def h_expand(self):
+        expansion_len = len(self.expand())
+        return (4 - expansion_len)
 
     # astar to locate tail and helper functions
     def h_tail(self, head):

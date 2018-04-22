@@ -79,27 +79,29 @@ class SnakeAlgo():
             best_path = frontier.get(block=False)
             # Check if this is a solution
             # update best seen
-            if best_path[1].check_for_food() and best_path[1].astar_tail():
-                return best_path[1].path
-            if best_path[0] < best_seen[0]:
-               best_seen = (best_path[0], best_path[1].path)
-            # Check if this path has been closed
-            to_close = ( best_path[0], best_path[1].snake[0] )
-            expand = True
-            for c in closed:
-                if to_close[1] == c[1]:
-                    if to_close[0] < c[0]:
-                        closed.remove(c)
-                    else:
-                        expand = False
-                    break
-            if expand:
-                closed.append(to_close)
-                # Expand the best path
-                expanded_list = best_path[1].expand()
-                for path in expanded_list:
-                    if path.h_expand()<4:
-                        frontier.put( ( path.h(), path ) )
+            if best_path[1].check_for_food():
+                if best_path[1].astar_tail():
+                    return best_path[1].path
+            else:
+                if best_path[0] < best_seen[0]:
+                   best_seen = (best_path[0], best_path[1].path)
+                # Check if this path has been closed
+                to_close = ( best_path[0], best_path[1].snake[0] )
+                expand = True
+                for c in closed:
+                    if to_close[1] == c[1]:
+                        if to_close[0] < c[0]:
+                            closed.remove(c)
+                        else:
+                            expand = False
+                        break
+                if expand:
+                    closed.append(to_close)
+                    # Expand the best path
+                    expanded_list = best_path[1].expand()
+                    for path in expanded_list:
+                        if path.h_expand()<4:
+                            frontier.put( ( path.h(), path ) )
 
         return best_seen[1]
 
@@ -143,30 +145,17 @@ class SnakePathModel():
    
 
     def h(self):
-        head        = self.snake[0]
-        food        = self.food[0]
         tail        = self.snake[len(self.snake)-1]
-        #h_box       = self.h_box()
-        #local_center    = self.locate_center_food() 
-        #h_food_local = self.h_center(SnakeAlgo.index_to_coord(local_center))
-        #center      = ( SnakeAlgo.Width / 2, SnakeAlgo.Height / 2 )
-        #h_centered  = self.h_center(center)
-        #h_rect_a    = self.h_rect()
-        #diff_x, diff_y  = SnakeAlgo.diff_squared(head, local_center)
-        #h_head      = math.sqrt(diff_x + diff_y)
-        food_head   = SnakeAlgo.diff(head, food)
-        food_head   = food_head[0] + food_head[1]
-        food_tail   = SnakeAlgo.diff(tail, food)
-        food_tail   = (food_tail[0]-1) + (food_tail[1] - 1)
-        head_tail   = SnakeAlgo.diff(tail, head)
-        head_tail   = (head_tail[0]-1) + (head_tail[1] - 1)
+        h_local_center    = self.h_center(self.local_center())
+        h_food_center = self.h_center(food)
+        h_rect_a    = self.h_rect()
 
-        h = (food_tail + head_tail) + food_head
+        h = h_food_center + h_local_center + (h_rect_a - len(self.snake))
 
         return h
 
     def h_center(self, center):
-        center_x, center_y = center
+        center_x, center_y = SnakeAlgo.index_to_coord(center)
         h_snake = 0
         for i in self.snake[1:]:
             x, y = SnakeAlgo.index_to_coord(i)
@@ -174,28 +163,37 @@ class SnakePathModel():
         return h_snake
 
 
-    def locate_center_food(self):
+    def local_center(self):
+        map_center  = SnakeAlgo.Width / 2 + SnakeAlgo.Height / 2
         diam        = math.sqrt(len(self.snake)) + 2
         rad         = diam / 2
 
         food        = self.food[0]
         
         valid_tile  = False
-        move      = 0
+        i_move      = 0
+        centered_dist = 999
+        centered = 0
         center = 0
-        while not valid_tile:
-            valid_tile = True
+        i = 1
+        while i_move < 4:
             move = SnakeAlgo.Moves[i_move]
-            move = move * -1
-            i = 1
-            while valid_tile and i <= rad:
-                center = food + i*move
-                if center in SnakeAlgo.Bounds:
-                    valid_tile = False
+            center = food + i*move
+            if center in SnakeAlgo.Bounds:
+                i_move += 1
+                i = 1
+            else:
                 i += 1
-            i_move += 1
+                if i > rad:
+                    i_move += 1
+                    i = 1
+                    center_dist = SnakeAlgo.diff(center, map_center)
+                    center_dist = center_dist[0] + center_dist[1]
+                    if centered_dist > center_dist:
+                        centered_dist = center_dist
+                        centered = center
         
-        return center
+        return centered
 
     def h_box(self):
         len_snake   = len(self.snake)
