@@ -64,6 +64,7 @@ class SnakeGameModel():
     def game_state_dictionary(self):
         model = { }
         model [ 'head' ]        = self.snake[0]
+        model [ 'tail' ]        = self.snake[len(self.snake)-1]
         model [ 'snake' ]       = self.snake
         model [ 'food' ]        = self.food
         model [ 'n_turns' ]     = self.n_turns
